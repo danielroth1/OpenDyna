@@ -3,11 +3,15 @@ Clone of the DOS game Dyna Blaster
 
 ## Installation
 ```
-git clone https://github.com/danielroth1/OpenDyna.git
-cd OpenDyna/src
-javac main/Main.java
+git clone https://github.com/danielroth1/OpenDyna.git && cd OpenDyna && mkdir build && javac src/main/Main.java -d build -sourcepath src/ && cp -r src/gui/images/ build/gui/ && cd build && java main.Main
+```
+
+## Execution
+```
+cd build
 java main.Main
 ```
+
 Note:
 After starting the game, a folder ```<home>/OpenDyna/``` is created.
 Copy the maps folder in ```<home>/OpenDyna/maps``` to access the pre created maps ingame.
