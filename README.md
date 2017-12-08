@@ -3,7 +3,7 @@ Clone of the DOS game Dyna Blaster
 
 ## Installation
 ```
-git clone https://github.com/danielroth1/OpenDyna.git && cd OpenDyna && mkdir build && javac src/main/Main.java -d build -sourcepath src/ && cp -r src/gui/images/ build/gui/ && cd build && java main.Main
+git clone https://github.com/danielroth1/OpenDyna.git && cd OpenDyna && mkdir build && javac src/main/Main.java -d build -sourcepath src/ && cp -r src/gui/images/ build/gui/
 ```
 
 ## Execution
