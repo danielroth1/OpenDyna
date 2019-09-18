@@ -6,6 +6,8 @@ import java.awt.event.MouseEvent;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.swing.BorderFactory;
+
 import server.Square;
 import server.components.ArrayPosition;
 import gui.GamePanel;
@@ -17,6 +19,10 @@ public class CanvasPanelComponent extends GamePanel{
 	
 	public CanvasPanelComponent(ArrayPosition size) {
 		super(false, true);
+		enableTranslationAndScaling = false;
+		drawBackgroundImage = false;
+//		setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+		SCALE = 0;
 		this.size = size;
 		
 		addMouseListener(new MouseAdapter(){

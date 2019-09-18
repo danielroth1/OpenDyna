@@ -33,8 +33,8 @@ public class GameControl {
 	private Map map;
 	private List<Profile> profilesInUse = new LinkedList<Profile>();
 	private HashMap<Client, Profile> profilesMap = new HashMap<Client, Profile>();
-	private Profile easyKi = new Profile("Easy Ki", Color.MAGENTA);
 	private boolean mapsAlreadyRequested = false;
+	private Profile easyKi = new Profile("Easy Ki", Color.MAGENTA);
 	
 	public GameControl() {
 		map = MapFactory.getSelfCreatedMap();
@@ -210,6 +210,7 @@ public class GameControl {
 		
 		if (p == easyKi){
 			client = new EasyAi(p.getName(), server);
+			p.setColor(Color.MAGENTA);
 		}
 		else if (!p.isNameSet())
 			client = new ClientImpl("ClientName" + number, server, guiControl, this, first);
@@ -292,14 +293,17 @@ public class GameControl {
 		return guiControl.getProfiles();
 	}
 	
-	public List<Profile> getProfilesNotIntUse(){
-		List<Profile> list = getProfiles();
+	public List<Profile> getProfilesNotIntUse(boolean includeAI){
+		List<Profile> list;
+		if (includeAI)
+			list = getProfiles();
+		else
+			list = guiControl.getHumanProfiles();
+		
 		List<Profile> inUse = getProfilesInUse();
 		for (Profile p : inUse){
 			if (list.contains(p)){
-				//ki wouldnt be removed
-				if (!p.isKi())
-					list.remove(p);
+				list.remove(p);
 			}
 		}
 		return list;

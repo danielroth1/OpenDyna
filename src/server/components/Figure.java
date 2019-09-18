@@ -7,11 +7,11 @@ import server.Square;
 
 public class Figure extends Square{
 	
-	
 	private String name;
 	private Color color;
 	private int strength;
 	private int direction;
+	private int speed;
 	
 	public Figure(String name, Color color, int strength, int x, int y) {
 		super(x, y, 50, 50, null);
@@ -19,6 +19,7 @@ public class Figure extends Square{
 		this.color = color;
 		this.strength = strength;
 		this.direction = Logic.NONE;
+		this.speed = 1;
 	}
 	
 	public int getStrength() {
@@ -47,6 +48,14 @@ public class Figure extends Square{
 
 	public void setDirection(int direction) {
 		this.direction = direction;
+	}
+
+	public int getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(int speed) {
+		this.speed = speed;
 	}
 	
 //	@Override

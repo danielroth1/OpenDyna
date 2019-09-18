@@ -223,7 +223,7 @@ public class PlayingField implements Serializable{
 				if (r<0)
 					return list;
 				list.add(new ArrayPosition(r, column));
-				if (field[r][column] != null)
+				if (field[r][column] != null && !(field[r][column] instanceof Item))
 					return list;
 			}
 		}
@@ -233,7 +233,7 @@ public class PlayingField implements Serializable{
 				if (r>=this.row)
 					return list;
 				list.add(new ArrayPosition(r, column));
-				if (field[r][column] != null)
+				if (field[r][column] != null && !(field[r][column] instanceof Item))
 					return list;
 					
 			}
@@ -244,7 +244,7 @@ public class PlayingField implements Serializable{
 				if (c<0)
 					return list;
 				list.add(new ArrayPosition(row, c));
-				if (field[row][c] != null)
+				if (field[row][c] != null && !(field[row][c] instanceof Item))
 					return list;
 			}
 		}
@@ -254,7 +254,7 @@ public class PlayingField implements Serializable{
 				if (c>=this.column)
 					return list;
 				list.add(new ArrayPosition(row, c));
-				if (field[row][c] != null)
+				if (field[row][c] != null && !(field[row][c] instanceof Item))
 					return list;
 			}
 		}

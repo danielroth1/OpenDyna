@@ -4,6 +4,7 @@ import java.awt.Dimension;
 
 import gui.GamePanel;
 
+import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
 import server.components.ArrayPosition;
@@ -23,9 +24,14 @@ public class CanvasPanel extends GamePanel{
 		super(false, true);
 		this.leLogicControl = leLogicControl;
 		this.leGuiControl = leGuiControl;
+		enableTranslationAndScaling = false;
 		setImages(leGuiControl.getImages());
 		
 		setBackground(LeGuiControl.CANVAS_COLOR);
+		setBackgroundImage(null);
+		drawBackgroundImage = false;
+		SCALE = 0;
+//		setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 	}
 	
 	public void update(Map map){

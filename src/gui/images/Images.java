@@ -1,14 +1,21 @@
 package gui.images;
 
 import java.awt.Color;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
+import gui.ColorManager;
 import main.GameControl;
 import maps.Texture;
+import server.components.ItemType;
 
 /**
  * stores all images and image paths
@@ -30,6 +37,8 @@ public class Images {
 	private String terrainBridgePath;
 	private String terrainStonePath;
 	
+	private String blockSolidStoneBackgroundPath;
+	
 	private String blockStonePath;
 	private String blockWoodPath;
 	private String blockSolidStonePath;
@@ -37,16 +46,16 @@ public class Images {
 	private String bombPath;
 	private String explosionPath;
 	
-	private ImageIcon figureNorth;
-	private ImageIcon figureSouth;
-	private ImageIcon figureWest;
-	private ImageIcon figureEast;
-	private BufferedImage figureFront;
+	FigureImages figureTemplate;
+	private List<FigureImages> figureImages;
+	
 	private BufferedImage terrainEarth;
 	private BufferedImage terrainWater;
 	private BufferedImage terrainGrass;
 	private BufferedImage terrainBridge;
 	private BufferedImage terrainStone;
+	
+	private BufferedImage blockSolidStoneBackground;
 	
 	private BufferedImage blockStone;
 	private BufferedImage blockWood;
@@ -54,6 +63,8 @@ public class Images {
 	private BufferedImage blockSolidWood;
 	private BufferedImage bomb;
 	private BufferedImage explosion;
+	
+	private Map<ItemType, BufferedImage> itemImages;
 	
 	public static Color[] COLORS = GameControl.COLORS;
 	
@@ -65,6 +76,8 @@ public class Images {
 	}
 	
 	private void initiatePaths(){
+		blockSolidStoneBackgroundPath = imagePathPng + "blockSolidStoneBackground.png";
+		
 		figureNorthPath = imagePathGif + "figureNorth.gif";
 		figureSouthPath = imagePathGif + "figureSouth.gif";
 		figureWestPath = imagePathGif + "figureWest.gif";
@@ -84,16 +97,30 @@ public class Images {
 	}
 	
 	private void initiateIcons(){
+		figureImages = new ArrayList<FigureImages>();
+		itemImages = new HashMap<ItemType, BufferedImage>();
 		try {
-//			figureNorth = ImageIO.read(getClass().getResource(figureNorthPath));
-			figureNorth = new ImageIcon(getClass().getResource(figureNorthPath));
-			figureSouth = new ImageIcon(getClass().getResource(figureSouthPath));
-			figureWest = new ImageIcon(getClass().getResource(figureWestPath));
-			figureEast = new ImageIcon(getClass().getResource(figureEastPath));
-//			figureSouth = ImageIO.read(getClass().getResource(figureSouthPath));
-//			figureWest = ImageIO.read(getClass().getResource(figureWestPath));
-//			figureEast = ImageIO.read(getClass().getResource(figureEastPath));
-			figureFront = ImageIO.read(getClass().getResource(figureFrontPath));
+			BufferedImage figureNorth = ImageIO.read(getClass().getResource(figureNorthPath));
+			BufferedImage figureSouth = ImageIO.read(getClass().getResource(figureSouthPath));
+			BufferedImage figureWest = ImageIO.read(getClass().getResource(figureWestPath));
+			BufferedImage figureEast = ImageIO.read(getClass().getResource(figureEastPath));
+			BufferedImage figureFront = ImageIO.read(getClass().getResource(figureFrontPath));
+			
+			figureTemplate = new FigureImages(
+					figureNorth,
+					figureSouth,
+					figureWest,
+					figureEast,
+					figureFront);
+			
+			// Fill colors
+			for (int i = 0; i < 8; i++) {
+				FigureImages image = new FigureImages(figureTemplate);
+				image.setColor(ColorManager.toColor(i));
+				figureImages.add(image);
+			}
+			
+			blockSolidStoneBackground = ImageIO.read(getClass().getResource(blockSolidStoneBackgroundPath));
 			terrainEarth = ImageIO.read(getClass().getResource(terrainEarthPath));
 			terrainWater = ImageIO.read(getClass().getResource(terrainWaterPath));
 			terrainGrass = ImageIO.read(getClass().getResource(terrainGrassPath));
@@ -106,8 +133,12 @@ public class Images {
 			bomb = ImageIO.read(getClass().getResource(bombPath));
 			explosion = ImageIO.read(getClass().getResource(explosionPath));
 			
+			// items
+			itemImages.put(ItemType.INCREASE_BOMBS, ImageIO.read(getClass().getResource(imagePathPng + "itemIncreaseBombs.png")));
+			itemImages.put(ItemType.INCREASE_SPEED, ImageIO.read(getClass().getResource(imagePathPng + "itemIncreaseSpeed.png")));
+			itemImages.put(ItemType.INCREASE_STRENGTH, ImageIO.read(getClass().getResource(imagePathPng + "itemIncreaseStrength.png")));
+			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -139,6 +170,10 @@ public class Images {
 		}
 	}
 	
+	public BufferedImage getImageItem(ItemType type){
+		return itemImages.get(type);
+	}
+	
 	private void initiateFigures(){
 		
 	}
@@ -147,27 +182,29 @@ public class Images {
 	public static String getImagePath() {
 		return imagePathPng;
 	}
+
+	public BufferedImage getFigureNorth(int i) {
+		return figureImages.get(i).getFigureNorth();
+	}
+
+	public BufferedImage getFigureSouth(int i) {
+		return figureImages.get(i).getFigureSouth();
+	}
+
+	public BufferedImage getFigureWest(int i) {
+		return figureImages.get(i).getFigureWest();
+	}
+
+	public BufferedImage getFigureEast(int i) {
+		return figureImages.get(i).getFigureEast();
+	}
 	
-	private BufferedImage returnBufferedImage(BufferedImage img){
-		BufferedImage b = new BufferedImage(50, 70, BufferedImage.TYPE_INT_ARGB);
-		b.getGraphics().drawImage(img, 0, 20, null);
-		return img;
+	public BufferedImage getFigureFront(int i) {
+		return figureImages.get(i).getFigureFront();
 	}
-
-	public ImageIcon getFigureNorth() {
-		return figureNorth;
-	}
-
-	public ImageIcon getFigureSouth() {
-		return figureSouth;
-	}
-
-	public ImageIcon getFigureWest() {
-		return figureWest;
-	}
-
-	public ImageIcon getFigureEast() {
-		return figureEast;
+	
+	public BufferedImage getBlockSolidStoneBackground() {
+		return blockSolidStoneBackground;
 	}
 
 	public BufferedImage getTerrainEarth() {
@@ -188,10 +225,6 @@ public class Images {
 
 	public BufferedImage getTerrainStone() {
 		return terrainStone;
-	}
-
-	public BufferedImage getFigureFront() {
-		return returnBufferedImage(figureFront);
 	}
 
 	public BufferedImage getBlockStone() {

@@ -7,13 +7,13 @@ public class ClientObject {
 	private Client client;
 	private boolean isAlive;
 	private int bombs;
-	private int bombsLeft;
+	private int placedBombs;
 	
 	public ClientObject(Client client, boolean isAlive, int bombs) {
 		this.client = client;
 		this.isAlive = isAlive;
 		this.bombs = bombs;
-		bombsLeft = bombs;
+		placedBombs = 0;
 	}
 
 	public Client getClient() {
@@ -28,8 +28,8 @@ public class ClientObject {
 		return bombs;
 	}
 
-	public int getBombsLeft() {
-		return bombsLeft;
+	public int getPlacedBombs() {
+		return placedBombs;
 	}
 
 	public void setAlive(boolean isAlive) {
@@ -39,9 +39,13 @@ public class ClientObject {
 	public void setBombs(int bombs) {
 		this.bombs = bombs;
 	}
+	
+	public int getBombsLeft() {
+		return Math.max(0, bombs - placedBombs);
+	}
 
-	public void setBombsLeft(int bombsLeft) {
-		this.bombsLeft = bombsLeft;
+	public void setPlacedBombs(int placedBombs) {
+		this.placedBombs = placedBombs;
 	}
 	
 	

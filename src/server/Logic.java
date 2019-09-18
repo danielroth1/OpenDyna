@@ -14,6 +14,8 @@ import server.components.Bomb;
 import server.components.ClientObject;
 import server.components.Explosion;
 import server.components.Figure;
+import server.components.Item;
+import server.components.ItemType;
 import server.components.PlayingField;
 
 import client.Client;
@@ -136,8 +138,27 @@ public class Logic {
 						
 						for (Client c : clients){
 							ClientObject co = clientObjects.get(c);
-							//BOMB PLACEMENT
 							if (co.isAlive()){
+								//ITEMS
+								Square s = playingField.getSquare(c.getFigure().getArrayPosition());
+								if (s instanceof Item)
+								{
+									Item item = (Item)s;
+									switch(item.getItemType()) {
+									case INCREASE_BOMBS:
+										co.setBombs(co.getBombs() + 1);
+										break;
+									case INCREASE_SPEED:
+										c.getFigure().setSpeed(c.getFigure().getSpeed() + 1);
+										break;
+									case INCREASE_STRENGTH:
+										c.getFigure().setStrength(c.getFigure().getStrength() + 1);
+										break;
+									}
+									playingField.removeSquare(s.getArrayPosition());
+								}
+								
+								//BOMB PLACEMENT
 								if (co.getBombsLeft() > 0
 										&& layBomb[clients.indexOf(c)] != null){
 									ArrayPosition a = layBomb[clients.indexOf(c)];
@@ -145,7 +166,7 @@ public class Logic {
 									//cant overwrite laid bomb
 									if (playingField.addSquare(b, a.getRow(), a.getColumn(), false)){
 										bombs.add(b);
-										co.setBombsLeft(co.getBombsLeft()-1);
+										co.setPlacedBombs(co.getPlacedBombs()+1);
 										for (Client c2 : clients){
 											c2.bombLaidDown(b);
 										}
@@ -205,7 +226,7 @@ public class Logic {
 	public void addClient(Client c){
 		clients.add(c);
 		resetArrays();
-		clientObjects.put(c, new ClientObject(c, true, 2));
+		clientObjects.put(c, new ClientObject(c, true, 1));
 		server.clientLoggedIn(c);
 	}
 	
@@ -249,7 +270,7 @@ public class Logic {
 	public boolean layBomb(Client c){
 		int x = c.getFigure().getX();
 		int y = c.getFigure().getY();
-		ArrayPosition a = playingField.getArrayPosition(x, y);
+		ArrayPosition a = PlayingField.getArrayPosition(x, y);
 		if (standsOnEmptyFields(c.getFigure())){
 			layBomb[clients.indexOf(c)] = a;
 			lastLaidBomb[clients.indexOf(c)] = a;
@@ -397,8 +418,14 @@ public class Logic {
 					}
 				}
 				if (!lastbomb){
+					Square s = playingField.getField()[a.getRow()][a.getColumn()];
+					if (s instanceof Item) {
+						
+					}
+					else {						
+						return false;
+					}
 //					System.out.println("last bomb error");
-					return false;
 				}
 			}
 			//TODO ELSE ERROR
@@ -406,7 +433,7 @@ public class Logic {
 //			else if (!playingField.isEmpty(a.getRow(), a.getColumn()))
 //					return false;
 					
-			}
+		}
 		return true;
 	}
 	
@@ -492,7 +519,7 @@ public class Logic {
 		playingField.removeSquare(b.getArrayPosition().getRow(), b.getArrayPosition().getColumn());
 		//refilling exploded bombs
 		ClientObject co = clientObjects.get(b.getOwner());
-		co.setBombsLeft(co.getBombsLeft() + 1);
+		co.setPlacedBombs(co.getPlacedBombs() - 1);
 		for (int i : DIRECTIONS){
 			//ALL DIRECTIONS
 			explosionArea.addAll(explodeInDirection(b.getArrayPosition(), b.getStrength(), i));
@@ -529,7 +556,22 @@ public class Logic {
 				if (b.isDestructable()){
 					playingField.removeSquare(s.getArrayPosition().getRow(), s.getArrayPosition().getColumn());
 //					//HANDLE ITEM DROP
-//					playingField.addSquare(b.getItem(), a, true);
+					
+					// Set item with a certain probability.
+					if (Math.random() < 0.12) {
+						int num = (int)Math.round(Math.random() * ItemType.values().length);
+						ItemType type = ItemType.INCREASE_BOMBS;
+						if (num < 2) {
+							type = ItemType.values()[num];
+						}
+						b.setItem(new Item(type));
+						b.getItem().setArrayPosition(b.getArrayPosition());
+					}
+					
+					if (b.getItem() != null){
+						playingField.addSquare(b.getItem(), b.getArrayPosition(), true);
+						System.out.println("Item dropped: " + b.getItem().toString());
+					}
 					for (Client c : clients){
 						c.blockDestroyed();
 					}

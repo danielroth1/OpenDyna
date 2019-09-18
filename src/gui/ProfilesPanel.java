@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -146,10 +147,25 @@ public class ProfilesPanel extends JPanel{
 	@SuppressWarnings("unchecked")
 	public List<Profile> getProfilesList(){
 		List<Profile> list = new LinkedList<Profile>();
+		
+		// First Player profiles. AI profiles appear at the end.
+		
+		// Add all non AI profiles first.
 		for (Profile p : profiles.keySet()){
-			list.add(p);
+			if (!p.isKi()) {
+				list.add(p);				
+			}
 		}
 		Collections.sort(list);
+		
+		// Add AI profiles after sorting.
+		for (Profile p : profiles.keySet()) {
+			if (p.isKi())
+			{
+				list.add(p);
+			}
+		}
+		
 		return list;
 	}
 	

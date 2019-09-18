@@ -27,9 +27,11 @@ public class GameInfoPanel extends JPanel{
 	private GameControl gameControl;
 	private InfoPanel infoPanel;
 	private JComboBox<Profile> profiles = new JComboBox<Profile>();
+	private JComboBox<Profile> profilesAI = new JComboBox<Profile>();
 	
 	private JButton startBtn;
 	private JButton addClientBtn;
+	private JButton addClientAIBtn;
 	private JButton removeClientBtn;
 	
 	public GameInfoPanel(GuiControl guiControl, GameControl gameControl) {
@@ -39,14 +41,25 @@ public class GameInfoPanel extends JPanel{
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		
 		add(infoPanel);
+		
 		Box addBox = new Box(BoxLayout.LINE_AXIS);
 		addBox.setAlignmentX(LEFT_ALIGNMENT);
 		profiles.setMaximumSize(new Dimension(80, 30));
 		addBox.add(addClientBtn);
 		addBox.add(Box.createRigidArea(new Dimension(10, 0)));
 		addBox.add(profiles);
+		
+		Box addAIBox = new Box(BoxLayout.LINE_AXIS);
+		addAIBox.setAlignmentX(LEFT_ALIGNMENT);
+		profilesAI.setMaximumSize(new Dimension(80, 30));
+		addAIBox.add(addClientAIBtn);
+		addAIBox.add(Box.createRigidArea(new Dimension(10, 0)));
+		addAIBox.add(profilesAI);
+		
 		add(Box.createRigidArea(new Dimension(0, 5)));
 		add(addBox);
+		add(Box.createRigidArea(new Dimension(0, 5)));
+		add(addAIBox);
 		add(Box.createRigidArea(new Dimension(0, 5)));
 		add(removeClientBtn);
 		add(Box.createRigidArea(new Dimension(0, 5)));
@@ -62,16 +75,22 @@ public class GameInfoPanel extends JPanel{
 	
 	public void update(){
 		profiles.removeAllItems();
-		for (Profile p : guiControl.getProfiles()){
+		for (Profile p : gameControl.getProfilesNotIntUse(false)){
 			profiles.addItem(p);
 		}
-		updateProfilesComboBox();
+		
+		profilesAI.removeAllItems();
+		for (Profile p : guiControl.getAIProfiles()){
+			profilesAI.addItem(p);
+		}
+		
 	}
 	
 	private void initiateButtons(){
-		startBtn = new JButton("Start game");
-		addClientBtn = new JButton("add player");
-		removeClientBtn = new JButton("remove player");
+		startBtn = new JButton("Start Game");
+		addClientBtn = new JButton("Add Player");
+		addClientAIBtn = new JButton("Add AI");
+		removeClientBtn = new JButton("Remove Player");
 		
 		startBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
@@ -89,21 +108,22 @@ public class GameInfoPanel extends JPanel{
 			}
 		});
 		
+		addClientAIBtn.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				Profile p = (Profile)profilesAI.getSelectedItem();
+				if (p != null)
+					guiControl.addClient(p);
+				else
+					guiControl.addClient();
+			}
+		});
+		
 		removeClientBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				guiControl.removeClient();
 			}
 		});
 	}
-	
-	public void updateProfilesComboBox(){
-		profiles.removeAllItems();
-		for (Profile p : gameControl.getProfilesNotIntUse()){
-			profiles.addItem(p);
-		}
-	}
-	
-	
 	
 	@Override
 	public void setBackground(Color bg) {
@@ -116,13 +136,13 @@ public class GameInfoPanel extends JPanel{
 
 	private class InfoPanel extends JPanel{
 		private JLabel randomLabel = new JLabel("Random map:");
-		private JLabel sizeLabel = new JLabel("size: ");
-		private JLabel densityLabel = new JLabel("density: ");
+		private JLabel sizeLabel = new JLabel("Size: ");
+		private JLabel densityLabel = new JLabel("Density: ");
 		private JTextField sizeY = new JTextField(1);
 		private JTextField sizeX = new JTextField(1);
 		private JTextField densityTextField =  new JTextField(1);
 		private JLabel densityLabelInfo = new JLabel("(0 - 100)");
-		private JButton randomMapBtn = new JButton("Set random map");
+		private JButton randomMapBtn = new JButton("Set Random Map");
 		
 		
 		public InfoPanel(){
@@ -132,6 +152,9 @@ public class GameInfoPanel extends JPanel{
 			
 			add(randomLabel);
 			add(Box.createRigidArea(new Dimension(0, 5)));
+			
+			sizeX.setMaximumSize(new Dimension(80, 30));
+			sizeY.setMaximumSize(new Dimension(80, 30));
 			Box sizeBox = new Box(BoxLayout.LINE_AXIS);
 			sizeBox.setAlignmentX(LEFT_ALIGNMENT);
 			sizeBox.add(sizeLabel);
@@ -139,6 +162,8 @@ public class GameInfoPanel extends JPanel{
 			sizeBox.add((new JLabel(" X ")));
 			sizeBox.add(sizeY);
 			add(sizeBox);
+			
+			densityTextField.setMaximumSize(new Dimension(80, 30));
 			Box densityBox = new Box(BoxLayout.LINE_AXIS);
 			densityBox.setAlignmentX(LEFT_ALIGNMENT);
 			densityBox.add(densityLabel);

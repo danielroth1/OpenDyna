@@ -13,7 +13,7 @@ public class Engine {
 	}
 	
 	public void move(Figure f, int direction){
-		int speed = 1;
+		int speed = f.getSpeed();
 		if (direction == Logic.UP){
 			f.setY(f.getY()-speed);
 		}

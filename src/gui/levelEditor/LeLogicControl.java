@@ -144,6 +144,7 @@ public class LeLogicControl {
 	 */
 	public static ArrayPosition getArrayPosition(int x, int y){
 		//round down and divid by 50
+//		return new ArrayPosition((y-y%50)/50, (x-x%50)/50);
 		return new ArrayPosition((y-y%50)/50, (x-x%50)/50);
 	}
 	

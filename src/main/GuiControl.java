@@ -1,7 +1,9 @@
 package main;
 
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -79,7 +81,7 @@ public class GuiControl {
 		
 		gamePanel.setImages(images);
 		gamePanel.add(winLosePanel);
-		contentPanel.setLayout(null);
+		contentPanel.setLayout(new CardLayout());
 		contentPanel.add(startPanel);
 		contentPanel.add(lobbyPanel);
 		contentPanel.add(profilesPanel);
@@ -249,6 +251,15 @@ public class GuiControl {
 		List<Profile> list = new LinkedList<Profile>();
 		for (Profile p : getProfiles()){
 			if (!p.isKi())
+				list.add(p);
+		}
+		return list;
+	}
+	
+	public List<Profile> getAIProfiles(){
+		List<Profile> list = new LinkedList<Profile>();
+		for (Profile p : getProfiles()){
+			if (p.isKi())
 				list.add(p);
 		}
 		return list;
