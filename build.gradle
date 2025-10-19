@@ -1,0 +1,143 @@
+plugins {
+	id 'java'
+	id 'application'
+}
+
+group = 'org.opendyna'
+version = '0.1.0'
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_11
+	targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Add your dependencies here, for example:
+	// implementation 'org.slf4j:slf4j-api:1.7.36'
+}
+
+application {
+	// application's main class (FQCN)
+	mainClass = 'main.Main'
+}
+
+jar {
+	manifest {
+		attributes 'Main-Class': application.mainClass
+	}
+}
+
+// Create a fat (uber) JAR without requiring the Shadow plugin.
+// This collects runtimeClasspath entries and unzips them into a single jar.
+task fatJar(type: Jar) {
+	archiveBaseName.set(project.name)
+	archiveClassifier.set('all')
+	from(sourceSets.main.output)
+	dependsOn configurations.runtimeClasspath
+	from {
+		configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+	}
+	manifest {
+		attributes 'Main-Class': application.mainClass
+	}
+}
+
+tasks.build {
+	dependsOn fatJar
+}
+
+// Creates a Windows native executable (EXE) / installer using jpackage.
+// Requirements: jpackage available on PATH (JDK 14+). For MSI installer, WiX toolset is required.
+tasks.register('packageWindows', Exec) {
+	dependsOn fatJar
+	group = 'distribution'
+	description = 'Package the application as a native Windows executable using jpackage'
+
+	doFirst {
+		def jarFile = fatJar.archiveFile.get().asFile
+		def inputDir = jarFile.parentFile.absolutePath
+		def jarName = jarFile.name
+
+			// Build jpackage args dynamically so we only pass --icon if the file exists
+			def args = [] as List
+			args << 'jpackage'
+			args << '--type' << 'exe'
+			args << '--input' << inputDir
+			args << '--name' << project.name
+			args << '--main-jar' << jarName
+			// application.mainClass is a Property<String>; pass the actual value
+			def mainClassValue = null
+			try {
+				mainClassValue = application.mainClass.get()
+			} catch(Exception e) {
+				mainClassValue = application.mainClass.toString()
+			}
+			args << '--main-class' << mainClassValue
+			def iconFile = file('resources/icon.ico')
+			if (iconFile.exists()) {
+				args << '--icon' << iconFile.path
+			} else {
+				logger.lifecycle('resources/icon.ico not found — packaging will proceed without a custom icon')
+			}
+			args << '--app-version' << project.version
+			args << '--dest' << 'installer'
+
+			// Windows-specific UX options
+			args << '--win-shortcut'
+			args << '--win-menu'
+			args << '--win-dir-chooser'
+			args << '--win-per-user-install'
+			args << '--vendor' << 'OpenDyna'
+
+			// Prefer jpackage from JAVA_HOME if available to ensure platform-correct tool
+			def javaHome = System.getenv('JAVA_HOME')
+			if (javaHome) {
+				def jpackagePath = file(javaHome).toPath().resolve('bin').resolve('jpackage').toFile().path
+				args[0] = jpackagePath
+			}
+			logger.lifecycle('Running jpackage with args: ' + args.join(' '))
+			commandLine args
+	}
+}
+
+// Task to always produce an app-image (no WiX, no MSI/EXE installer). This creates a runnable folder
+// that includes the native launcher and the bundled JRE so the app runs on machines without Java.
+tasks.register('packageAppImage', Exec) {
+	dependsOn fatJar
+	group = 'distribution'
+	description = 'Package the application as an app-image (standalone folder with bundled runtime)'
+
+	doFirst {
+		def jarFile = fatJar.archiveFile.get().asFile
+		def inputDir = jarFile.parentFile.absolutePath
+		def jarName = jarFile.name
+
+		def args = [] as List
+		// Prefer jpackage from JAVA_HOME if available
+		def javaHome = System.getenv('JAVA_HOME')
+		if (javaHome) {
+			args << file(javaHome).toPath().resolve('bin').resolve('jpackage').toFile().path
+		} else {
+			args << 'jpackage'
+		}
+
+		args << '--type' << 'app-image'
+		args << '--input' << inputDir
+		args << '--name' << project.name
+		args << '--main-jar' << jarName
+		args << '--main-class' << application.mainClass.get()
+
+		def iconFile = file('resources/icon.ico')
+		if (iconFile.exists()) { args << '--icon' << iconFile.path }
+
+	args << '--app-version' << project.version
+	args << '--dest' << 'installer/app-image'
+
+		logger.lifecycle('Running jpackage (app-image) with args: ' + args.join(' '))
+		commandLine args
+	}
+}
