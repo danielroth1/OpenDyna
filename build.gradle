@@ -15,6 +15,22 @@ repositories {
 	mavenCentral()
 }
 
+// Project uses a non-standard layout (sources under `src/` not `src/main/java`).
+// Add the top-level `src` directory as a Java source root so Gradle will compile the classes.
+sourceSets {
+	main {
+		java {
+			srcDirs = ['src']
+		}
+		resources {
+			// Keep default resources and also include the resources/ folder at repo root
+			srcDirs = ['resources', 'src']
+			// Avoid copying Java source files as resources
+			exclude '**/*.java'
+		}
+	}
+}
+
 dependencies {
 	// Add your dependencies here, for example:
 	// implementation 'org.slf4j:slf4j-api:1.7.36'
@@ -58,6 +74,15 @@ tasks.register('packageWindows', Exec) {
 	description = 'Package the application as a native Windows executable using jpackage'
 
 	doFirst {
+		// Allow overrides via Gradle project properties for CI or manual paths
+		if (project.hasProperty('jlinkPath')) {
+			jlinkPath = project.property('jlinkPath') as String
+			logger.lifecycle("Using jlinkPath from project property: " + jlinkPath)
+		}
+		if (project.hasProperty('jmodsDir')) {
+			jmodsDir = project.property('jmodsDir') as String
+			logger.lifecycle("Using jmodsDir from project property: " + jmodsDir)
+		}
 		def jarFile = fatJar.archiveFile.get().asFile
 		def inputDir = jarFile.parentFile.absolutePath
 		def jarName = jarFile.name
@@ -139,5 +164,99 @@ tasks.register('packageAppImage', Exec) {
 
 		logger.lifecycle('Running jpackage (app-image) with args: ' + args.join(' '))
 		commandLine args
+	}
+}
+
+// Create a minimized runtime image with jlink. Adjust modules as needed for your app.
+tasks.register('createRuntimeImage', Exec) {
+	group = 'distribution'
+	description = 'Create a runtime image using jlink for smaller app bundles'
+
+	doFirst {
+		// Locate jlink: prefer JAVA_HOME, fallback to PATH. Provide actionable errors.
+		def javaHomeEnv = System.getenv('JAVA_HOME')
+		def jlinkPath = null
+
+		if (javaHomeEnv) {
+			def candidate = file(javaHomeEnv).toPath().resolve('bin').resolve('jlink').toFile()
+			if (candidate.exists()) {
+				jlinkPath = candidate.path
+			} else {
+				candidate = file(javaHomeEnv).toPath().resolve('bin').resolve('jlink.exe').toFile()
+				if (candidate.exists()) { jlinkPath = candidate.path }
+			}
+		}
+
+		if (!jlinkPath) {
+			def pathEnv = System.getenv('PATH')
+			if (pathEnv) {
+				pathEnv.split(File.pathSeparator).each { p ->
+					if (!jlinkPath) {
+						def f = new File(p, 'jlink')
+						def fe = new File(p, 'jlink.exe')
+						if (f.exists()) { jlinkPath = f.path }
+						if (fe.exists()) { jlinkPath = fe.path }
+					}
+				}
+			}
+		}
+
+		if (!jlinkPath) {
+			throw new GradleException("jlink not found. Set JAVA_HOME to a JDK (9+) that contains jlink and a 'jmods' folder, or install a JDK and add its bin to PATH. On Windows set JAVA_HOME to the JDK root (for example C:\\Program Files\\Java\\jdk-17).")
+		}
+
+		logger.lifecycle("Using jlink executable: " + jlinkPath)
+
+		// Determine jmods directory (prefer JAVA_HOME/jmods; otherwise infer from jlink location)
+		def jmodsDir = null
+		if (javaHomeEnv) {
+			def jm = file(javaHomeEnv).toPath().resolve('jmods').toFile()
+			if (jm.exists()) { jmodsDir = jm.path }
+		}
+		if (!jmodsDir) {
+			// jlink is usually in <jdk>/bin, so jmods should be in the parent directory of bin
+			def jlinkParent = file(jlinkPath).toPath().getParent().getParent()
+			def jm = jlinkParent.resolve('jmods').toFile()
+			if (jm.exists()) { jmodsDir = jm.path }
+		}
+		if (!jmodsDir) {
+			throw new GradleException("jmods directory not found. A JDK installation with a 'jmods' folder is required by jlink. If JAVA_HOME points to a JRE, replace it with a JDK.")
+		}
+
+		def outputDir = file('build/runtime')
+		if (outputDir.exists()) {
+			logger.lifecycle('Removing existing runtime directory: ' + outputDir.path)
+			project.delete(outputDir)
+		}
+		def output = outputDir.absolutePath
+		// modules: at least include java.base and java.desktop for Swing/AWT
+		def modules = 'java.base,java.desktop,java.logging'
+		def args = [jlinkPath, '--module-path', file(jmodsDir).absolutePath, '--add-modules', modules, '--output', output, '--compress', '2', '--no-header-files', '--no-man-pages']
+		logger.lifecycle('Running jlink: ' + args.join(' '))
+		commandLine args
+	}
+}
+
+// Make packageAppImage depend on runtime image by default (optional). If you prefer not to use jlink,
+// call packageAppImage directly.
+tasks.named('packageAppImage') {
+	dependsOn 'createRuntimeImage'
+	doFirst {
+		def runtimeDir = file('build/runtime')
+		if (runtimeDir.exists()) {
+			// insert --runtime-image before --dest
+			// find index of --dest and insert --runtime-image <path> before it
+			def destIndex = null
+			for (int i = 0; i < commandLine.size(); i++) {
+				if (commandLine.get(i) == '--dest') { destIndex = i; break }
+			}
+			if (destIndex != null) {
+				def argsList = new ArrayList(commandLine)
+				argsList.add(destIndex, runtimeDir.path)
+				argsList.add(destIndex, '--runtime-image')
+				commandLine = argsList
+				logger.lifecycle('Added --runtime-image ' + runtimeDir.path + ' to jpackage args')
+			}
+		}
 	}
 }
