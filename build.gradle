@@ -137,34 +137,64 @@ tasks.register('packageAppImage', Exec) {
 	description = 'Package the application as an app-image (standalone folder with bundled runtime)'
 
 	doFirst {
-		def jarFile = fatJar.archiveFile.get().asFile
-		def inputDir = jarFile.parentFile.absolutePath
-		def jarName = jarFile.name
+			def jarFile = fatJar.archiveFile.get().asFile
+			def inputDir = jarFile.parentFile.absolutePath
+			def jarName = jarFile.name
 
-		def args = [] as List
-		// Prefer jpackage from JAVA_HOME if available
-		def javaHome = System.getenv('JAVA_HOME')
-		if (javaHome) {
-			args << file(javaHome).toPath().resolve('bin').resolve('jpackage').toFile().path
-		} else {
-			args << 'jpackage'
-		}
+			// Destination base: dist. We will create dist/app-image for jpackage output
+			def distDir = file('dist')
+			def appImageContainer = distDir.toPath().resolve('app-image').toFile()
+			// Remove existing dist/app-image at the beginning as requested
+			if (appImageContainer.exists()) {
+				logger.lifecycle('Removing existing app-image container: ' + appImageContainer.path)
+				project.delete(appImageContainer)
+			}
 
-		args << '--type' << 'app-image'
-		args << '--input' << inputDir
-		args << '--name' << project.name
-		args << '--main-jar' << jarName
-		args << '--main-class' << application.mainClass.get()
+			def args = [] as List
+			// Prefer jpackage from JAVA_HOME if available
+			def javaHome = System.getenv('JAVA_HOME')
+			if (javaHome) {
+				args << file(javaHome).toPath().resolve('bin').resolve('jpackage').toFile().path
+			} else {
+				args << 'jpackage'
+			}
 
-		def iconFile = file('resources/icon.ico')
-		if (iconFile.exists()) { args << '--icon' << iconFile.path }
+			args << '--type' << 'app-image'
+			args << '--input' << inputDir
+			args << '--name' << project.name
+			args << '--main-jar' << jarName
+			args << '--main-class' << application.mainClass.get()
 
-	args << '--app-version' << project.version
-	args << '--dest' << 'installer/app-image'
+			def iconFile = file('resources/icon.ico')
+			if (iconFile.exists()) { args << '--icon' << iconFile.path }
 
-		logger.lifecycle('Running jpackage (app-image) with args: ' + args.join(' '))
-		commandLine args
+			args << '--app-version' << project.version
+			// direct jpackage to create the app-image inside dist/app-image
+			args << '--dest' << appImageContainer.path
+
+			logger.lifecycle('Running jpackage (app-image) with args: ' + args.join(' '))
+			commandLine args
 	}
+
+		doLast {
+			// After jpackage runs, find the generated app-image folder inside dist/app-image and zip it into dist
+			def appImageRoot = file('dist').toPath().resolve('app-image').toFile()
+			if (!appImageRoot.exists()) {
+				logger.lifecycle('No app-image produced under: ' + appImageRoot.path)
+				return
+			}
+			// Find first directory inside appImageRoot (the generated app image)
+			def generated = appImageRoot.listFiles()?.find { it.isDirectory() }
+			if (generated == null) {
+				logger.lifecycle('No generated app-image directory found inside: ' + appImageRoot.path)
+				return
+			}
+			def zipName = generated.name + '.zip'
+			def zipFile = file('dist').toPath().resolve(zipName).toFile()
+			logger.lifecycle('Creating zip of app-image: ' + generated.path + ' -> ' + zipFile.path)
+			ant.zip(destfile: zipFile.path, basedir: generated.path)
+			logger.lifecycle('Created app-image zip: ' + zipFile.path)
+		}
 }
 
 // Create a minimized runtime image with jlink. Adjust modules as needed for your app.
